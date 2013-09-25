@@ -1,0 +1,14 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    ffi (1.9.0)
+    ffi-rzmq (1.0.1)
+      ffi
+    minitest (3.0.1)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  ffi-rzmq
+  minitest
