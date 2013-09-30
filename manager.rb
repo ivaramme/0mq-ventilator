@@ -57,7 +57,7 @@ class Worker
   def initialize host = "127.0.0.1", port = "5557", publish_port = "5558"
     setup_communicator
     init_pull_socket host, port   #receives commands
-    init_push_socket publish_port, false #pushes commands back
+    init_push_socket publish_port, false #pushes commands back in a not-blocking way by not binding to a port
   end
 
   # You need to explicitly call this method when you are ready to receive messages
