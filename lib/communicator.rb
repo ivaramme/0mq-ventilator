@@ -19,12 +19,12 @@ module Communicator
     @push = context.socket(ZMQ::PUSH)
 
     if bind_all
-      @push.bind("tcp://*:"+port)
+      @push.bind("tcp://*:"+port)  #publish to anyone listening
+      Communicator::get_logger.info "Binding to port #{port}"
     else
-      @push.connect "tcp://localhost:#{port}"
+      @push.connect "tcp://localhost:#{port}" #connects pusher socket to a binding socket
+      Communicator::get_logger.info "Connecting pusher to port #{port}"
     end
-
-    Communicator::get_logger.info "Binding to port #{port}"
   end
 
   # Initializes a listener socket (pull) that connects to the ventilator
@@ -33,10 +33,10 @@ module Communicator
     @pull = context.socket(ZMQ::PULL)
 
     if !bind_all
-      @pull.connect "tcp://#{host}:#{port}"
+      @pull.connect "tcp://#{host}:#{port}" #connect to a publisher socket
       Communicator::get_logger.info "Connecting to tcp://#{host}:#{port}"
     else
-      @pull.bind "tcp://*:#{port}"
+      @pull.bind "tcp://*:#{port}" #listen for a publisher in this port
       Communicator::get_logger.info "Binding to tcp://*:#{port}"
     end
 
