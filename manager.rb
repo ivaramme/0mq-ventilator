@@ -1,65 +1,92 @@
 #!/usr/bin/env ruby
 
-require_relative 'communicator'
-require_relative 'processhelper'
+require_relative 'lib/communicator'
 
+# This class works as a coordinator to dispatch orders
+#
+# Author::    Ivan Ramirez
 class Coordinator
   include Communicator
-  include ProcessHelper
 
   COORDINATOR_ROLE = "coordinator"
 
   def initialize host = "127.0.0.1", port = "5557"
-    setup
-    start_ping_pong 1
+    setup_communicator
+    #start_ping_pong
     init_push_socket port
-    init_pull_socket host, port.to_i+1
+    init_pull_socket "*", port.to_i+1, true
+    @acks = 0;
   end
 
+  # You need to explicitly call this method when you are ready to receive messages
   def start
-    output = Thread.new { puts "Message? "; publish $stdin }
-    input = Thread.new { subscribe &Proc.new { |message| callback message } }
+    @publisher = Thread.new do
+          while true
+            puts "Command? ";  #thread publishing commands
+            publish $stdin.gets
+          end
+    end
+    @reader = Thread.new { subscribe &Proc.new { |message| callback message } } #thread waiting for messages
 
-
-    #input.run
-    output.run
-    input.join
+    @publisher.join
   end
 
   def callback message
-    puts "Server received #{message}"
+    if message == "ack"
+      @acks += 1
+      puts "Acks received: #{@acks}"
+    end
+  end
+
+  def stop
+    super
+
+    Thread.kill(@publisher)
+    Thread.kill(@reader)
   end
 
 end
 
+# This class connects to a coordinator a wait for orders
+#
+# Author::    Ivan Ramirez
 class Worker
   include Communicator
   WORKER_ROLE = "worker"
 
   def initialize host = "127.0.0.1", port = "5557", publish_port = "5558"
-    setup
-    init_pull_socket host, port
-    init_push_socket publish_port
+    setup_communicator
+    init_pull_socket host, port   #receives commands
+    init_push_socket publish_port, false #pushes commands back
   end
 
+  # You need to explicitly call this method when you are ready to receive messages
   def start
     subscribe &Proc.new { |message| listener(message) }
   end
 
+  # Call back method when a message is received
   def listener message
+    p message
     case message.downcase
+      # add own messages
       when "start"
         puts 'Starting'
-        publish "got it!"
       when "end"
         puts 'Ending'
+        stop
+        exit 0
       else
         puts "unknown message:#{message}"
     end
+    publish "ack"
   end
 
 end
 
+# CLI tool to run example
+#
+# Author::    Ivan Ramirez
 class Manager
   def initialize host, port, role
     workers = 0
@@ -74,7 +101,6 @@ class Manager
         coordinators += 1
         puts 'New coordinator'
         coordinator = Coordinator.new host, port
-        coordinator.publish "start"
         coordinator.start
       else
         puts "Invalid role"
@@ -84,6 +110,7 @@ class Manager
 end
 
 #------------------------------------------------------------------
+# CLI tool to run example
 #------------------------------------------------------------------
 require 'optparse'
 
@@ -91,7 +118,6 @@ options = {}
 
 optparse = OptionParser.new do|opts|
   opts.on( '-r', '--role STR', String, 'Application\'s role' ) do |setting|
-    puts setting
     options[:role] = setting
   end
 
