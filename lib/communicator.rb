@@ -10,7 +10,6 @@ module Communicator
     Signal.trap(:INT) do
       stop
     end
-    @pings = 0;
   end
 
   # Initializes a ventilator socket (push)
@@ -61,14 +60,7 @@ module Communicator
     while true
       response = @pull.recv_string(input)
       if !error?(response)
-        #ignore ping/pong messages
         input.chomp!
-
-        if input.downcase == "ping"
-          @pings += 1
-          Communicator::get_logger.info "Pings received: #{@pings}" if @pings % 100 == 0
-          pong
-        end
 
         #Message received
         yield input if block_given?
@@ -87,33 +79,10 @@ module Communicator
 
   # Stops threads and close sockets gracefully
   def stop
-    Thread.kill(@ping_pong) if !@ping_pong.nil?
     @pull.close if !@pull.nil?
     @push.close if !@push.nil?
     Communicator::get_logger.info "Forcing app to shut down"
     exit 0
-  end
-
-  # Starts a ping-pong thread between
-  # +timeout+:: how often is this thread going to run
-  def start_ping_pong timeout = 5
-    @ping_pong = Thread.new {
-                              while true
-                                ping
-                                sleep timeout
-                              end
-    }
-    @ping_pong.run
-  end
-
-  # Sends a ping command
-  def ping
-    publish "ping" if !@push.nil?
-  end
-
-  # Sends a pong command as response
-  def pong
-    publish "pong" if !@push.nil?
   end
 
   def self.get_logger

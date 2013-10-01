@@ -12,7 +12,6 @@ class Coordinator
 
   def initialize host = "127.0.0.1", port = "5557"
     setup_communicator
-    #start_ping_pong
     init_push_socket port
     init_pull_socket "*", port.to_i+1, true
     @acks = 0;
