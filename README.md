@@ -5,8 +5,12 @@ Coordinator: accepts connections from workers and sends messages in a round-robi
 Worker: connects to a coordinator and waits for messages. Once a message is received publishes an update of status
 ```
 Coordinator -- sends message --> 
-                                Worker - receives and processes messages
-           <-- sends ack     --  (this could be some other message and doesn't have to be right away)
+                                < cluster of workers, 1 message per worker >
+                                 Worker - receives and processes messages
+                                 Worker - receives and processes messages
+                                 Worker - receives and processes messages
+                                < ---------------------------------------- >
+           <-- each one sends ack  --  (this could be some other message and doesn't have to be right away)
 ```
 ####Instructions:
 
