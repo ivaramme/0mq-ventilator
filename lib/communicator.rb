@@ -13,7 +13,7 @@ module Communicator
   end
 
   # Initializes a ventilator socket (push)
-  def init_push_socket port, bind_all = true
+  def init_push_socket port, bind_all = true, publish_to_host = "localhost"
     context = ZMQ::Context.new 1
     @push = context.socket(ZMQ::PUSH)
 
@@ -21,8 +21,8 @@ module Communicator
       @push.bind("tcp://*:"+port)  #publish to anyone listening
       Communicator::get_logger.info "Binding to port #{port}"
     else
-      @push.connect "tcp://localhost:#{port}" #connects pusher socket to a binding socket
-      Communicator::get_logger.info "Connecting pusher to port #{port}"
+      @push.connect "tcp://#{publish_to_host}:#{port}" #connects pusher socket to a binding socket
+      Communicator::get_logger.info "Connecting pusher to host #{publish_to_host} port #{port}"
     end
   end
 

@@ -53,10 +53,10 @@ class Worker
   include Communicator
   WORKER_ROLE = "worker"
 
-  def initialize host = "127.0.0.1", port = "5557", publish_port = "5558"
+  def initialize host = "127.0.0.1", port = "5557", publish_port = "5558", publish_to_host = host
     setup_communicator
     init_pull_socket host, port   #receives commands
-    init_push_socket publish_port, false #pushes commands back in a not-blocking way by not binding to a port
+    init_push_socket publish_port, false, publish_to_host #pushes commands back in a not-blocking way by not binding to a port
   end
 
   # You need to explicitly call this method when you are ready to receive messages
@@ -87,19 +87,19 @@ end
 #
 # Author::    Ivan Ramirez
 class Manager
-  def initialize host, port, role
+  def initialize host, port, role, publish_to_host = nil,
     workers = 0
     coordinators = 0;
     case role.downcase
       when Worker::WORKER_ROLE
         workers += 1
         puts 'New worker'
-        worker = Worker.new host, port
+        worker = Worker.new(host, port, port.to_i + 1, publish_to_host)
         worker.start
       when Coordinator::COORDINATOR_ROLE
         coordinators += 1
         puts 'New coordinator'
-        coordinator = Coordinator.new host, port
+        coordinator = Coordinator.new(host, port)
         coordinator.start
       else
         puts "Invalid role"
@@ -130,8 +130,13 @@ optparse = OptionParser.new do|opts|
       options[:server] = setting
   end
 
+  options[:publish_to_host] = "127.0.0.1"
+  opts.on( 'p', '--publish_to STR', String, 'Server to publish results to' ) do |setting|
+        options[:publish_to_host] = setting
+  end
+
 end
 
 optparse.parse!
 
-Manager.new options[:host], options[:port], options[:role]
+Manager.new options[:host], options[:port], options[:role], options[:publish_to_host]
